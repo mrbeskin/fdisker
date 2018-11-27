@@ -11,15 +11,16 @@ Requirements:
 The cli is used as follows: 
 
 ```
-$ fdisker -f /path/to/file 
+$ fdisker -f /path/to/file -m 
 ```
 
 The `-f` flag with a path to the filename is required.
+The `-m` flag with a path to the disk mount point is required. 
 
 If you do not wish to actually save the commands after you execute them, use the --write-off flag: 
 
 ```
-$ fdisker -f /path/to/file --write-off=false
+$ fdisker -f /path/to/file -m /dev/sda2 --write=false
 ```
 
 The above command would start `fdisk` and run all commands from your file, but quit without saving, as per the `fdisk` interactive `q` command.
@@ -31,7 +32,7 @@ fdisker may also be used as a Go library.
 There is one function:
 
 ```
-func RunFdiskCommandFile(path, mountPath string, writeFlag bool) error
+func RunFdiskCommandFile(filePath, mountPath string, writeFlag bool) error
 ```
 
 Its usage is simple: 
