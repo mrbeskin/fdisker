@@ -29,7 +29,8 @@ func RunFdiskCommandFile(path string, mountPath string, writeFlag bool) error {
 	fdisk := exec.Command(fdiskCmd, mountPath)
 	fdisk.Stdout = os.Stdout
 	fdisk.Stderr = os.Stderr
-	_, fdiskInWriter := io.Pipe()
+	fdiskReader, fdiskInWriter := io.Pipe()
+	fdisk.Stdin = fdiskInReader
 	err = fdisk.Start()
 	if err != nil {
 		return fmt.Errorf("starting command: %v", err)
