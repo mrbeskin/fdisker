@@ -12,7 +12,7 @@ import (
 const DEFAULT = "DEF"
 const fdiskCmd = "fdisk"
 const writeCommand = "w"
-const quitCommand = "q\n"
+const quitCommand = "q"
 
 // RunFdiskCommandFile reads from a file, converts it to a set of fdisk commands,
 // then starts fdisk and runs those commands on the passed in mounted volume.
