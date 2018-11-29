@@ -53,6 +53,15 @@ func RunFdiskCommandFile(path string, mountPath string, writeFlag bool) error {
 	if len(errs) > 0 {
 		return compositeError(errs)
 	}
+	errChan := make(chan error, 1)
+	go func(c chan error) {
+		c <- fdisk.Wait()
+	}(errChan)
+	fdiskWriter.Close()
+	err = <-errChan
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
