@@ -12,7 +12,7 @@ import (
 const DEFAULT = "DEF"
 const fdiskCmd = "fdisk"
 const writeCommand = "w"
-const quitCommand = "q"
+const quitCommand = "q\n"
 
 // RunFdiskCommandFile reads from a file, converts it to a set of fdisk commands,
 // then starts fdisk and runs those commands on the passed in mounted volume.
@@ -69,19 +69,14 @@ func quitFdisk(fdiskWriter io.Writer, fdisk *exec.Cmd, writeFlag bool) error {
 			return fmt.Errorf("failed to successfully exit on quit without write: %v", err)
 		}
 	}
-	err := fdisk.Wait()
-	if err != nil {
-		return fmt.Errorf("failure for command to end: %v", err)
-	}
 	return nil
 }
 
 func executeCommand(command string, w io.Writer) error {
 	newLine := []byte("\n")
 	if command != "DEF" {
-		fmt.Println("writing")
-		_, err := w.Write([]byte(command))
 		fmt.Println(command)
+		_, err := w.Write([]byte(command))
 		if err != nil {
 			return fmt.Errorf("writing command %v: %v", command, err)
 		}
