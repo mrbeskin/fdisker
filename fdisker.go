@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 )
 
 // DEFAULT is the key token for sending default to fdisk in the form of a newline
@@ -29,37 +30,48 @@ func RunFdiskCommandFile(path string, mountPath string, writeFlag bool) error {
 	fdisk := exec.Command(fdiskCmd, mountPath)
 	fdisk.Stdout = os.Stdout
 	fdisk.Stderr = os.Stderr
-	fdiskReader, fdiskInWriter := io.Pipe()
-	fdisk.Stdin = fdiskInReader
+	fdiskReader, fdiskWriter := io.Pipe()
+	fdisk.Stdin = fdiskReader
 	err = fdisk.Start()
 	if err != nil {
 		return fmt.Errorf("starting command: %v", err)
 	}
-	defer func() {
-		if writeFlag {
-			err := executeCommand(writeCommand, fdiskInWriter)
-			if err != nil {
-				panic(fmt.Errorf("failed to write changes during exit: %v", err))
-			}
-		} else {
-			err := executeCommand(quitCommand, fdiskInWriter)
-			if err != nil {
-				panic(fmt.Errorf("failed to successfully exit on quit without write: %v", err))
-			}
-		}
-		err := fdisk.Wait()
-		if err != nil {
-			panic(fmt.Errorf("failure for command to end: %v", err))
-		}
-	}()
 	// pipe commands to fdisk
-	// ANY ERROR RETURNS PAST THIS POINT SHOULD SET writeFlag to FALSE
+	errs := make([]error, 0)
 	for i, command := range commands {
-		err := executeCommand(command, fdiskInWriter)
+		time.Sleep(500 * time.Millisecond)
+		err := executeCommand(command, fdiskWriter)
 		if err != nil {
 			writeFlag = false
-			return fmt.Errorf("failed on command \"%v\" which was command number %v: %v", command, i+1, err)
+			errs = append(errs, fmt.Errorf("failed on command \"%v\" which was command number %v: %v", command, i+1, err))
 		}
+	}
+	err = quitFdisk(fdiskWriter, fdisk, writeFlag)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return compositeError(errs)
+	}
+	return nil
+}
+
+func quitFdisk(fdiskWriter io.Writer, fdisk *exec.Cmd, writeFlag bool) error {
+	time.Sleep(1 * time.Second)
+	if writeFlag {
+		err := executeCommand(writeCommand, fdiskWriter)
+		if err != nil {
+			return fmt.Errorf("failed to write changes during exit: %v", err)
+		}
+	} else {
+		err := executeCommand(quitCommand, fdiskWriter)
+		if err != nil {
+			return fmt.Errorf("failed to successfully exit on quit without write: %v", err)
+		}
+	}
+	err := fdisk.Wait()
+	if err != nil {
+		return fmt.Errorf("failure for command to end: %v", err)
 	}
 	return nil
 }
@@ -67,7 +79,9 @@ func RunFdiskCommandFile(path string, mountPath string, writeFlag bool) error {
 func executeCommand(command string, w io.Writer) error {
 	newLine := []byte("\n")
 	if command != "DEF" {
+		fmt.Println("writing")
 		_, err := w.Write([]byte(command))
+		fmt.Println(command)
 		if err != nil {
 			return fmt.Errorf("writing command %v: %v", command, err)
 		}
@@ -77,4 +91,16 @@ func executeCommand(command string, w io.Writer) error {
 		return fmt.Errorf("return after writing command: %v", err)
 	}
 	return nil
+}
+
+func compositeError(errs []error) error {
+	err := ""
+	for i := len(errs) - 1; i >= 0; i-- {
+		if err != "" {
+			err = err + ": " + errs[i].Error()
+		} else {
+			err = errs[i].Error()
+		}
+	}
+	return fmt.Errorf(err)
 }
