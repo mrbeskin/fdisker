@@ -20,7 +20,7 @@ The `-m` flag with a path to the disk mount point is required.
 If you do not wish to actually save the commands after you execute them, use the --write-off flag: 
 
 ```
-$ fdisker -f /path/to/file -m /dev/sda2 --write=false
+$ fdisker -f /path/to/file -m /dev/sda --write=false
 ```
 
 The above command would start `fdisk` and run all commands from your file, but quit without saving, as per the `fdisk` interactive `q` command.
@@ -38,13 +38,13 @@ func RunFdiskCommandFile(filePath, mountPath string, writeFlag bool) error
 Its usage is simple: 
 
 ```
-err := fdisker.RunFdiskCommandFile("/path/to/file", "/dev/sda2", true)
+err := fdisker.RunFdiskCommandFile("/path/to/file", "/dev/sda", true)
 if err != nil {
 	// handle error
 }
 ```
 
-Executing the above code will run the commands described in `/path/to/file` using `fdisk` on `/dev/sda2`. 
+Executing the above code will run the commands described in `/path/to/file` using `fdisk` on the hard drive at `/dev/sda`. 
 
 `fdisk` output will be written to stdout and stderr. 
 
